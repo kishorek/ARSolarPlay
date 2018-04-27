@@ -12,6 +12,11 @@
 //ARKit框架
 #import <ARKit/ARKit.h>
 
+#import <AVFoundation/AVFoundation.h>
+#import <QuartzCore/QuartzCore.h>
+
+#define VariableName(arg) (@""#arg)
+
 #define screenWidth [UIScreen mainScreen].bounds.size.width
 #define screenHeight [UIScreen mainScreen].bounds.size.height
 
@@ -74,6 +79,9 @@
 @property(nonatomic, strong) SCNNode *earthGroupNodeL;
 @property(nonatomic, strong) SCNNode *sunHaloNode;
 @property(nonatomic, strong) SCNNode *sunHaloNodeL;
+
+@property(nonatomic,strong) UITapGestureRecognizer *tap;
+
 @end
 
 @implementation SCNViewController
@@ -85,14 +93,53 @@
 }
 
 - (void)viewWillAppear:(BOOL)animated {
+    self.tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
     
     //当VR镜头模式下，显示左边视图
     if (_isCardBoard)
         [self.view addSubview:self.arLeftView];
     [self.view addSubview:self.arRightView];
     [self initNode];
+    [self.arRightView addGestureRecognizer:self.tap];
     
     [self.arSession runWithConfiguration:self.arSessionConfiguration];
+}
+
+
+-(void) handleTap:(UITapGestureRecognizer *) obj{
+    if(obj.state == UIGestureRecognizerStateEnded){
+        CGPoint location = [obj locationInView:self.arRightView];
+        NSArray<SCNHitTestResult *> *hits = [self.arRightView hitTest:location options:nil];
+        if ([hits count] != 0){
+            NSLog(@"%@",hits.firstObject.node.geometry.firstMaterial.diffuse.contents);
+            
+            if(hits.firstObject.node == _sunNode){
+                [self talk:@"Sun"];
+            } else if ([[NSString stringWithFormat:@"%@",hits.firstObject.node.geometry.firstMaterial.diffuse.contents] containsString:@"UIExtendedSRGBColorSpace"]){
+                [self talk:@"Earth"];
+            } else if (hits.firstObject.node == _moonNode){
+                [self talk:@"Moon"];
+            } else if (hits.firstObject.node == _mercuryNode){
+                [self talk:@"Mercury"];
+            } else if (hits.firstObject.node == _venusNode){
+                [self talk:@"Venus"];
+            } else if (hits.firstObject.node == _saturnNode || hits.firstObject.node == _saturnLoopNode){
+                [self talk:@"Saturn"];
+            } else if (hits.firstObject.node == _marsNode){
+                [self talk:@"Mars"];
+            } else if (hits.firstObject.node == _plutoNode){
+                [self talk:@"Pluto"];
+            } else if (hits.firstObject.node == _jupiterNode){
+                [self talk:@"Jupiter"];
+            } else if (hits.firstObject.node == _neptuneNode){
+                [self talk:@"Neptune"];
+            } else if (hits.firstObject.node == _plutoNode){
+                [self talk:@"Pluto"];
+            } else if (hits.firstObject.node == _uranusNode || hits.firstObject.node == _uranusLoopNode){
+                [self talk:@"Uranus"];
+            }
+        }
+    }
 }
 
 - (void)didReceiveMemoryWarning {
@@ -1131,6 +1178,16 @@
 //    if (!addedNode) {
 //        [self initNode];
 //    }
+}
+
+-(void) talk:(NSString *) text {
+    
+    AVSpeechSynthesizer *synthesizer = [[AVSpeechSynthesizer alloc]init];
+    
+    AVSpeechUtterance *speechutt = [AVSpeechUtterance speechUtteranceWithString:text];
+    //[speechutt setRate:0.3f];
+    speechutt.voice = [AVSpeechSynthesisVoice voiceWithLanguage:@"en-us"];
+    [synthesizer speakUtterance:speechutt];
 }
 @end
 
